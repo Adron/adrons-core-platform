@@ -22,13 +22,12 @@ export default function Login() {
       const result = await signIn('credentials', {
         username,
         password,
-        redirect: false,
+        redirect: true,
+        callbackUrl: '/dashboard'
       });
 
       if (result?.error) {
         setError('Invalid username or password');
-      } else {
-        router.push('/dashboard');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
