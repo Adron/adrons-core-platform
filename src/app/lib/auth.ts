@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import type { NextAuthConfig } from 'next-auth';
 
 const prisma = new PrismaClient();
 
@@ -17,17 +18,18 @@ export const { handlers: { GET, POST }, auth } = NextAuth({
           return null;
         }
 
+        const username = credentials.username as string;
+        const password = credentials.password as string;
+
         const user = await prisma.user.findUnique({
-          where: {
-            username: credentials.username
-          }
+          where: { username }
         });
 
         if (!user) {
           return null;
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password);
+        const isPasswordValid = await compare(password, user.password);
 
         if (!isPasswordValid) {
           return null;
@@ -61,4 +63,4 @@ export const { handlers: { GET, POST }, auth } = NextAuth({
   session: {
     strategy: "jwt"
   }
-});
+} satisfies NextAuthConfig);
