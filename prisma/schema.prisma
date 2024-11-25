@@ -9,10 +9,56 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
+  id        String       @id @default(cuid())
+  email     String       @unique
+  username  String       @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  userRoles UserRole[]  // Relation to UserRole
+  tenants   TenantUser[] // Relation to TenantUser
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  name      String
+  created   DateTime     @default(now())
+  updated   DateTime     @updatedAt
+  details   String?
+  users     TenantUser[] // Relation to TenantUser
+}
+
+model Role {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  created   DateTime   @default(now())
+  updated   DateTime   @updatedAt
+  details   String?
+  userRoles UserRole[] // Relation to UserRole
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  roleId    String   // Foreign key to Role
+  userId    String   // Foreign key to User
+  name      String
+  created   DateTime @default(now())
+  updated   DateTime @updatedAt
+  details   String?
+  role      Role     @relation(fields: [roleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, roleId]) // Prevents duplicate role assignments
+}
+
+model TenantUser {
+  id        String   @id @default(uuid())
+  tenantId  String   // Foreign key to Tenant
+  userId    String   // Foreign key to User
+  created   DateTime @default(now())
+  updated   DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, tenantId]) // Prevents duplicate tenant assignments
 }
