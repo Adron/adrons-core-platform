@@ -3,6 +3,22 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import type { NextAuthConfig } from 'next-auth';
+import { User } from '@prisma/client';
+
+// Add this at the top of the file
+console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+console.log('Environment:', process.env.NODE_ENV);
+
+// Extend the built-in session types
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string;
+      email: string;
+      username: string;
+    }
+  }
+}
 
 const prisma = new PrismaClient();
 
@@ -35,6 +51,7 @@ export const { handlers: { GET, POST }, auth } = NextAuth({
           return null;
         }
 
+        // Make sure to return all required fields
         return {
           id: user.id,
           email: user.email,
@@ -49,13 +66,19 @@ export const { handlers: { GET, POST }, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Explicitly set all required fields
+        token.id = user.id;
         token.username = user.username;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
+      if (session.user) {
+        // Explicitly set all required fields
+        session.user.id = token.id as string;
         session.user.username = token.username as string;
+        session.user.email = token.email as string;
       }
       return session;
     }

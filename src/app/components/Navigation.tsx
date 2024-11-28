@@ -2,64 +2,72 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Navigation() {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
 
   const isActive = (path: string) => {
-    return pathname === path ? 'bg-indigo-700' : '';
-  };
-
-  const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: '/' });
+    return pathname === path ? 'text-white' : 'text-gray-300 hover:text-white';
   };
 
   return (
-    <nav className="bg-indigo-600 p-4">
-      <div className="container mx-auto">
-        <div className="flex items-center justify-between">
-          <div className="flex space-x-4">
-            <Link href="/" 
-              className={`text-white px-3 py-2 rounded-md text-sm font-medium ${isActive('/')}`}>
-              Home
-            </Link>
-            <Link href="/dashboard" 
-              className={`text-white px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard')}`}>
-              Dashboard
-            </Link>
-            {!session ? (
-              <>
-                <Link href="/login" 
-                  className={`text-white px-3 py-2 rounded-md text-sm font-medium ${isActive('/login')}`}>
+    <nav className="bg-gray-800">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <Link href="/" className="text-white font-bold text-xl">
+                Core Platform
+              </Link>
+            </div>
+            <div className="hidden md:block">
+              <div className="ml-10 flex items-baseline space-x-4">
+                <Link href="/" className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/')}`}>
+                  Home
+                </Link>
+                {session && (
+                  <Link
+                    href="/dashboard"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard')}`}
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                <Link
+                  href="/about"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/about')}`}
+                >
+                  About
+                </Link>
+              </div>
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <div className="ml-4 flex items-center md:ml-6">
+              {session ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-gray-300">
+                    {session.user?.username}
+                  </span>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/login')}`}
+                >
                   Login
                 </Link>
-                <Link href="/create-account" 
-                  className={`text-white px-3 py-2 rounded-md text-sm font-medium ${isActive('/create-account')}`}>
-                  Create Account
-                </Link>
-              </>
-            ) : (
-              <button
-                onClick={handleLogout}
-                className="text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
-              >
-                Logout
-              </button>
-            )}
-            <Link href="/about" 
-              className={`text-white px-3 py-2 rounded-md text-sm font-medium ${isActive('/about')}`}>
-              About
-            </Link>
-          </div>
-          {session && (
-            <div className="text-white text-sm">
-              Welcome, {session.user?.username}
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </nav>
