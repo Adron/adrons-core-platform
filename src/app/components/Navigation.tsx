@@ -48,9 +48,12 @@ export default function Navigation() {
             <div className="ml-4 flex items-center md:ml-6">
               {session ? (
                 <div className="flex items-center space-x-4">
-                  <span className="text-gray-300">
+                  <Link
+                    href="/settings"
+                    className={`text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium ${isActive('/settings')}`}
+                  >
                     {session.user?.username}
-                  </span>
+                  </Link>
                   <button
                     onClick={() => signOut({ callbackUrl: '/' })}
                     className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
