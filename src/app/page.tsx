@@ -5,7 +5,7 @@ export default function Home() {
         Hello, welcome to Adron Tools!
       </h1>
       <p className="text-xl">
-        You've found the Core Platform, which is a starting point for any and all the apps you might want to use that Adron Tools offers.
+        You&apos;ve found the Core Platform, which is a starting point for any and all the apps you might want to use that Adron Tools offers.
       </p>
     </main>
   );
