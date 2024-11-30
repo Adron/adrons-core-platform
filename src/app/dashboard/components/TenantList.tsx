@@ -84,27 +84,35 @@ export default function TenantList() {
   };
 
   if (loading) {
-    return <div className="p-4">Loading tenants...</div>;
+    return <div className="p-4 dark:text-gray-300">Loading tenants...</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
+    return <div className="p-4 text-red-500 dark:text-red-400">Error: {error}</div>;
   }
 
   const TenantCard = ({ tenant, isAdmin }: { tenant: Tenant['tenant']; isAdmin: boolean }) => (
-    <div className={`p-4 rounded-lg ${isAdmin ? 'bg-indigo-50 border border-indigo-200' : 'bg-gray-50 border border-gray-200'}`}>
-      <h4 className={`font-medium ${isAdmin ? 'text-indigo-900' : 'text-gray-900'}`}>
+    <div className={`p-4 rounded-lg ${
+      isAdmin 
+        ? 'bg-indigo-50 border border-indigo-200 dark:bg-indigo-950/50 dark:border-indigo-800' 
+        : 'bg-gray-50 border border-gray-200 dark:bg-gray-800/50 dark:border-gray-700'
+    }`}>
+      <h4 className={`font-medium ${
+        isAdmin 
+          ? 'text-indigo-900 dark:text-indigo-300' 
+          : 'text-gray-900 dark:text-gray-100'
+      }`}>
         {tenant.name}
       </h4>
       <div className="mt-3 flex space-x-4 text-sm">
         <div className="relative group">
           <button
-            className="text-gray-700 hover:text-gray-900 font-medium"
+            className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white font-medium"
           >
             Details
           </button>
           {/* Tooltip - positioned to the left */}
-          <div className="absolute right-full mr-4 top-0 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-sm rounded shadow-lg z-50">
+          <div className="absolute right-full mr-4 top-0 hidden group-hover:block w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-sm rounded shadow-lg z-50">
             <div className="relative">
               <h5 className="font-medium text-white mb-1">{tenant.name}</h5>
               <div className="text-gray-300 text-sm">
@@ -114,20 +122,20 @@ export default function TenantList() {
               <div className="absolute top-3 -right-[6px] w-0 h-0 
                 border-t-[6px] border-t-transparent 
                 border-b-[6px] border-b-transparent 
-                border-l-[6px] border-l-gray-900">
+                border-l-[6px] border-l-gray-900 dark:border-l-gray-800">
               </div>
             </div>
           </div>
         </div>
         <Link
           href={`/dashboard/edit-tenant/${tenant.id}`}
-          className="text-blue-700 hover:text-blue-900 font-medium"
+          className="text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
         >
           Edit
         </Link>
         <button
           onClick={() => handleDelete(tenant.id)}
-          className="text-red-700 hover:text-red-900 font-medium"
+          className="text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 font-medium"
         >
           Delete
         </button>
@@ -141,11 +149,11 @@ export default function TenantList() {
 
   return (
     <div className="w-full max-w-md">
-      <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Tenants</h2>
+      <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Your Tenants</h2>
       
       {adminTenants.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-lg font-medium mb-2 text-gray-900">Administrator</h3>
+          <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Administrator</h3>
           <div className="space-y-2">
             {adminTenants.map(({ tenant }) => (
               <TenantCard key={tenant.id} tenant={tenant} isAdmin={true} />
@@ -156,7 +164,7 @@ export default function TenantList() {
 
       {otherTenants.length > 0 && (
         <div>
-          <h3 className="text-lg font-medium mb-2 text-gray-900">Member</h3>
+          <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Member</h3>
           <div className="space-y-2">
             {otherTenants.map(({ tenant }) => (
               <TenantCard key={tenant.id} tenant={tenant} isAdmin={false} />
@@ -166,7 +174,7 @@ export default function TenantList() {
       )}
 
       {tenants.length === 0 && (
-        <p className="text-gray-700">No tenants found.</p>
+        <p className="text-gray-700 dark:text-gray-300">No tenants found.</p>
       )}
     </div>
   );
