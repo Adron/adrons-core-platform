@@ -71,8 +71,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const tenantId = params.id;
+
+    // First, delete all TenantUser associations
+    await prisma.tenantUser.deleteMany({
+      where: {
+        tenantId: tenantId
+      }
+    });
+
+    // Then delete the tenant
     await prisma.tenant.delete({
-      where: { id: params.id },
+      where: {
+        id: tenantId
+      }
     });
 
     return NextResponse.json({ message: 'Tenant deleted successfully' });

@@ -13,11 +13,27 @@ type Tenant = {
   role?: string;
 };
 
+// Add new interface for delete modal state
+interface DeleteModalState {
+  isOpen: boolean;
+  tenantId: string;
+  tenantName: string;
+  inputValue: string;
+  error: string | null;
+}
+
 export default function TenantList() {
   const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
+    isOpen: false,
+    tenantId: '',
+    tenantName: '',
+    inputValue: '',
+    error: null
+  });
 
   const fetchTenants = async () => {
     try {
@@ -61,13 +77,37 @@ export default function TenantList() {
     };
   }, []);
 
-  const handleDelete = async (tenantId: string) => {
-    if (!confirm('Are you sure you want to delete this tenant?')) {
+  const handleDeleteClick = (tenantId: string, tenantName: string) => {
+    setDeleteModal({
+      isOpen: true,
+      tenantId,
+      tenantName,
+      inputValue: '',
+      error: null
+    });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({
+      isOpen: false,
+      tenantId: '',
+      tenantName: '',
+      inputValue: '',
+      error: null
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteModal.inputValue !== deleteModal.tenantName) {
+      setDeleteModal(prev => ({
+        ...prev,
+        error: 'The tenant name does not match. Please try again.'
+      }));
       return;
     }
 
     try {
-      const response = await fetch(`/api/tenants/${tenantId}`, {
+      const response = await fetch(`/api/tenants/${deleteModal.tenantId}`, {
         method: 'DELETE',
       });
 
@@ -75,12 +115,66 @@ export default function TenantList() {
         throw new Error('Failed to delete tenant');
       }
 
+      handleDeleteCancel(); // Close modal
       router.refresh();
       await fetchTenants();
     } catch (err) {
       console.error('Error deleting tenant:', err);
-      alert('Failed to delete tenant');
+      setDeleteModal(prev => ({
+        ...prev,
+        error: 'Failed to delete tenant. Please try again.'
+      }));
     }
+  };
+
+  // Delete confirmation modal component
+  const DeleteConfirmationModal = () => {
+    if (!deleteModal.isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            Confirm Deletion
+          </h3>
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
+            To delete <span className="font-semibold">{deleteModal.tenantName}</span>, please type the tenant name to confirm.
+          </p>
+          <input
+            type="text"
+            value={deleteModal.inputValue}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setDeleteModal(prev => ({
+                ...prev,
+                inputValue: newValue,
+                error: null
+              }));
+            }}
+            autoFocus
+            placeholder="Type tenant name here"
+            className="w-full p-2 border rounded mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+          />
+          {deleteModal.error && (
+            <p className="text-red-500 dark:text-red-400 mb-4">{deleteModal.error}</p>
+          )}
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={handleDeleteCancel}
+              className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteConfirm}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -134,7 +228,7 @@ export default function TenantList() {
           Edit
         </Link>
         <button
-          onClick={() => handleDelete(tenant.id)}
+          onClick={() => handleDeleteClick(tenant.id, tenant.name)}
           className="text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 font-medium"
         >
           Delete
@@ -148,34 +242,37 @@ export default function TenantList() {
   const otherTenants = tenants.filter((t: Tenant) => t.role !== 'ADMIN');
 
   return (
-    <div className="w-full max-w-md">
-      <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Your Tenants</h2>
-      
-      {adminTenants.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Administrator</h3>
-          <div className="space-y-2">
-            {adminTenants.map(({ tenant }) => (
-              <TenantCard key={tenant.id} tenant={tenant} isAdmin={true} />
-            ))}
+    <>
+      <div className="w-full max-w-md">
+        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Your Tenants</h2>
+        
+        {adminTenants.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Administrator</h3>
+            <div className="space-y-2">
+              {adminTenants.map(({ tenant }) => (
+                <TenantCard key={tenant.id} tenant={tenant} isAdmin={true} />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {otherTenants.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Member</h3>
-          <div className="space-y-2">
-            {otherTenants.map(({ tenant }) => (
-              <TenantCard key={tenant.id} tenant={tenant} isAdmin={false} />
-            ))}
+        {otherTenants.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Member</h3>
+            <div className="space-y-2">
+              {otherTenants.map(({ tenant }) => (
+                <TenantCard key={tenant.id} tenant={tenant} isAdmin={false} />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {tenants.length === 0 && (
-        <p className="text-gray-700 dark:text-gray-300">No tenants found.</p>
-      )}
-    </div>
+        {tenants.length === 0 && (
+          <p className="text-gray-700 dark:text-gray-300">No tenants found.</p>
+        )}
+      </div>
+      <DeleteConfirmationModal />
+    </>
   );
 } 
