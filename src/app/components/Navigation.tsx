@@ -27,6 +27,12 @@ export default function Navigation() {
                 <Link href="/" className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/')}`}>
                   Home
                 </Link>
+                <Link
+                  href="/about"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/about')}`}
+                >
+                  About
+                </Link>
                 {session && (
                   <Link
                     href="/dashboard"
@@ -35,12 +41,6 @@ export default function Navigation() {
                     Dashboard
                   </Link>
                 )}
-                <Link
-                  href="/about"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/about')}`}
-                >
-                  About
-                </Link>
               </div>
             </div>
           </div>

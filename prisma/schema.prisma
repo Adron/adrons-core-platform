@@ -17,6 +17,7 @@ model User {
   updatedAt DateTime    @updatedAt
   userRoles UserRole[]  // Relation to UserRole
   tenants   TenantUser[] // Relation to TenantUser
+  ident     Json?       // Adding the new Ident field as optional JSON
 }
 
 model Tenant {

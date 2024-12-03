@@ -40,7 +40,56 @@ export default function DashboardSubmenu() {
             </svg>
             Add Tenant
           </Link>
-          {/* Add more submenu items here as needed */}
+
+          <Link
+            href="/dashboard/add-application"
+            className={`inline-flex items-center px-3 py-2 text-sm font-medium border-b-2 ${
+              isActive('/dashboard/add-application')
+                ? 'border-indigo-500 dark:border-indigo-400'
+                : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+            }`}
+          >
+            <svg
+              className="mr-2 h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            Add Application
+          </Link>
+
+          <Link
+            href="/dashboard/add-user"
+            className={`inline-flex items-center px-3 py-2 text-sm font-medium border-b-2 ${
+              isActive('/dashboard/add-user')
+                ? 'border-indigo-500 dark:border-indigo-400'
+                : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+            }`}
+          >
+            <svg
+              className="mr-2 h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            Add User
+          </Link>
         </div>
       </div>
     </div>
