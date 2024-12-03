@@ -23,9 +23,10 @@ export default function Login() {
       const result = await signIn('credentials', {
         username: credentials.username,
         password: credentials.password,
-        redirect: true,
-        callbackUrl: '/dashboard'
+        redirect: false,
       });
+
+      console.log('Sign in result:', result);
 
       if (result?.error) {
         setError(result.error === 'CredentialsSignin' 
@@ -33,6 +34,10 @@ export default function Login() {
           : result.error);
         setIsLoading(false);
         return;
+      }
+
+      if (result?.ok) {
+        router.push('/dashboard');
       }
 
     } catch (err) {

@@ -31,27 +31,33 @@ export const { handlers: { GET, POST }, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
+          console.log('Missing credentials');
           return null;
         }
 
         const username = credentials.username as string;
         const password = credentials.password as string;
 
+        console.log('Attempting to find user:', username);
+
         const user = await prisma.user.findUnique({
           where: { username }
         });
 
         if (!user) {
+          console.log('User not found');
           return null;
         }
 
+        console.log('Found user, comparing passwords');
         const isPasswordValid = await compare(password, user.password);
 
         if (!isPasswordValid) {
+          console.log('Invalid password');
           return null;
         }
 
-        // Make sure to return all required fields
+        console.log('Password valid, returning user');
         return {
           id: user.id,
           email: user.email,
