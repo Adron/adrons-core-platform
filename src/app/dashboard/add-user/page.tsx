@@ -3,43 +3,43 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface Application {
+interface User {
   id: string;
-  application: string;
-  name: string;
-  details: string | null;
-  created: string;
-  updated: string;
+  username: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function AddApplication() {
+export default function AddUser() {
   const router = useRouter();
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState({
-    name: '',
-    details: '',
-    metadata: ''
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingApps, setIsLoadingApps] = useState(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
-  // Fetch applications
-  const fetchApplications = async () => {
+  // Fetch users
+  const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/applications');
-      if (!response.ok) throw new Error('Failed to fetch applications');
+      const response = await fetch('/api/users');
+      if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
-      setApplications(data);
+      setUsers(data);
     } catch (err) {
-      console.error('Error fetching applications:', err);
+      console.error('Error fetching users:', err);
     } finally {
-      setIsLoadingApps(false);
+      setIsLoadingUsers(false);
     }
   };
 
   useEffect(() => {
-    fetchApplications();
+    fetchUsers();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,44 +47,44 @@ export default function AddApplication() {
     setIsLoading(true);
     setError('');
 
-    try {
-      let metadata;
-      try {
-        metadata = formData.metadata ? JSON.parse(formData.metadata) : {};
-      } catch (e) {
-        setError('Invalid JSON in metadata field');
-        setIsLoading(false);
-        return;
-      }
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
 
-      const response = await fetch('/api/applications', {
+    try {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
-          metadata,
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
         }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create application');
+        throw new Error(data.error || 'Failed to create user');
       }
 
       // Clear the form
       setFormData({
-        name: '',
-        details: '',
-        metadata: ''
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
       });
 
-      // Refresh the applications list
-      await fetchApplications();
+      // Refresh the users list
+      await fetchUsers();
     } catch (err) {
-      console.error('Error creating application:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create application');
+      console.error('Error creating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create user');
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +93,7 @@ export default function AddApplication() {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <div className="mb-10">
-        <h1 className="text-2xl font-semibold mb-6">Add New Application</h1>
+        <h1 className="text-2xl font-semibold mb-6">Add New User</h1>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
@@ -103,43 +103,58 @@ export default function AddApplication() {
           )}
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Name
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              Username
             </label>
             <input
               type="text"
-              id="name"
+              id="username"
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
             />
           </div>
 
           <div>
-            <label htmlFor="details" className="block text-sm font-medium text-gray-700">
-              Details
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
             </label>
-            <textarea
-              id="details"
-              rows={3}
+            <input
+              type="email"
+              id="email"
+              required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={formData.details}
-              onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
 
           <div>
-            <label htmlFor="metadata" className="block text-sm font-medium text-gray-700">
-              Metadata (JSON)
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
             </label>
-            <textarea
-              id="metadata"
-              rows={4}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
-              value={formData.metadata}
-              onChange={(e) => setFormData({ ...formData, metadata: e.target.value })}
-              placeholder="{}"
+            <input
+              type="password"
+              id="password"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
             />
           </div>
 
@@ -153,29 +168,26 @@ export default function AddApplication() {
                   : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
               }`}
             >
-              {isLoading ? 'Creating...' : 'Create Application'}
+              {isLoading ? 'Creating...' : 'Create User'}
             </button>
           </div>
         </form>
       </div>
 
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Application List</h2>
-        {isLoadingApps ? (
-          <div className="text-center py-4">Loading applications...</div>
+        <h2 className="text-xl font-semibold mb-4">User List</h2>
+        {isLoadingUsers ? (
+          <div className="text-center py-4">Loading users...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Application ID
+                    Username
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Details
+                    Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created At
@@ -186,22 +198,19 @@ export default function AddApplication() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {applications.map((app) => (
-                  <tr key={app.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                      {app.application}
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.username}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {app.name}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {app.details || '-'}
+                      {user.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(app.created).toLocaleDateString()}
+                      {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(app.updated).toLocaleDateString()}
+                      {new Date(user.updatedAt).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}
