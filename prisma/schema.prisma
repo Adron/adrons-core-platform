@@ -18,6 +18,7 @@ model User {
   userRoles UserRole[]  // Relation to UserRole
   tenants   TenantUser[] // Relation to TenantUser
   ident     Json?       // Adding the new Ident field as optional JSON
+  applications Application[] // Relation to Application
 }
 
 model Tenant {
@@ -62,4 +63,16 @@ model TenantUser {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, tenantId]) // Prevents duplicate tenant assignments
+}
+
+model Application {
+  id          String    @id @default(uuid())
+  application String
+  name        String
+  details     String?
+  metadata    Json?
+  created     DateTime  @default(now())
+  updated     DateTime  @updatedAt
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
 }
