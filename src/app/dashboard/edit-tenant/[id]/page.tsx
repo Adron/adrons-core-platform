@@ -10,6 +10,15 @@ type TenantData = {
   details: string | null;
 };
 
+interface TenantUser {
+  user: {
+    id: string;
+    username: string;
+    email: string;
+  };
+  role?: string;
+}
+
 export default function EditTenant({ params }: { params: { id: string } }) {
   const { isDark } = useDarkMode();
   const router = useRouter();
@@ -17,8 +26,24 @@ export default function EditTenant({ params }: { params: { id: string } }) {
     name: '',
     details: '',
   });
+  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [error, setError] = useState('');
+
+  // Fetch tenant users
+  const fetchTenantUsers = async () => {
+    try {
+      const response = await fetch(`/api/tenants/${params.id}/users`);
+      if (!response.ok) throw new Error('Failed to fetch tenant users');
+      const data = await response.json();
+      setTenantUsers(data);
+    } catch (err) {
+      console.error('Error fetching tenant users:', err);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   useEffect(() => {
     const fetchTenant = async () => {
@@ -32,6 +57,7 @@ export default function EditTenant({ params }: { params: { id: string } }) {
           name: data.name,
           details: data.details || '',
         });
+        await fetchTenantUsers(); // Fetch users after tenant data
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load tenant');
       } finally {
@@ -41,6 +67,23 @@ export default function EditTenant({ params }: { params: { id: string } }) {
 
     fetchTenant();
   }, [params.id]);
+
+  const handleRemoveUser = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/tenants/${params.id}/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove user');
+      }
+
+      await fetchTenantUsers(); // Refresh the user list
+    } catch (err) {
+      console.error('Error removing user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to remove user');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +182,70 @@ export default function EditTenant({ params }: { params: { id: string } }) {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className={commonStyles.subheading(isDark)}>Tenant Users</h2>
+          <button
+            onClick={() => router.push(`/dashboard/edit-tenant/${params.id}/add-users`)}
+            className={commonStyles.button(isDark, false)}
+          >
+            Add Users
+          </button>
+        </div>
+
+        {isLoadingUsers ? (
+          <div className={`text-center py-4 ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>
+            Loading users...
+          </div>
+        ) : (
+          <div className={commonStyles.table.container(isDark)}>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className={commonStyles.table.header(isDark)}>
+                <tr>
+                  <th className={commonStyles.table.headerCell(isDark)}>Username</th>
+                  <th className={commonStyles.table.headerCell(isDark)}>Email</th>
+                  <th className={commonStyles.table.headerCell(isDark)}>Role</th>
+                  <th className={commonStyles.table.headerCell(isDark)}>Actions</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                {tenantUsers.map((tenantUser) => (
+                  <tr key={tenantUser.user.id} className={commonStyles.table.row(isDark)}>
+                    <td className={commonStyles.table.cell(isDark)}>
+                      {tenantUser.user.username}
+                    </td>
+                    <td className={commonStyles.table.cell(isDark)}>
+                      {tenantUser.user.email}
+                    </td>
+                    <td className={commonStyles.table.cell(isDark)}>
+                      {tenantUser.role || 'Member'}
+                    </td>
+                    <td className={commonStyles.table.cell(isDark)}>
+                      <button
+                        onClick={() => handleRemoveUser(tenantUser.user.id)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {tenantUsers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className={`${commonStyles.table.cell(isDark)} text-center`}
+                    >
+                      No users assigned to this tenant
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

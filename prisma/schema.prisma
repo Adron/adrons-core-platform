@@ -19,6 +19,7 @@ model User {
   tenants   TenantUser[] // Relation to TenantUser
   ident     Json?       // Adding the new Ident field as optional JSON
   applications Application[] // Relation to Application
+  tenantRoleAssignments TenantUserRoleAssignment[]
 }
 
 model Tenant {
@@ -28,6 +29,8 @@ model Tenant {
   updated   DateTime     @updatedAt
   details   String?
   users     TenantUser[] // Relation to TenantUser
+  roles     TenantUserRole[] // Add this new relation
+  roleAssignments TenantUserRoleAssignment[]
 }
 
 model Role {
@@ -40,15 +43,17 @@ model Role {
 }
 
 model UserRole {
-  id        String   @id @default(uuid())
-  roleId    String   // Foreign key to Role
-  userId    String   // Foreign key to User
-  name      String
-  created   DateTime @default(now())
-  updated   DateTime @updatedAt
-  details   String?
-  role      Role     @relation(fields: [roleId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  id              String           @id @default(uuid())
+  roleId          String          // Foreign key to Role
+  userId          String          // Foreign key to User
+  name            String
+  created         DateTime        @default(now())
+  updated         DateTime        @updatedAt
+  details         String?
+  role            Role            @relation(fields: [roleId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  tenantUserRole  TenantUserRole  @relation(fields: [tenantUserRoleId], references: [id])
+  tenantUserRoleId String         // Foreign key to TenantUserRole
 
   @@unique([userId, roleId]) // Prevents duplicate role assignments
 }
@@ -75,4 +80,33 @@ model Application {
   updated     DateTime  @updatedAt
   userId      String
   user        User      @relation(fields: [userId], references: [id])
+}
+
+model TenantUserRole {
+  id        String     @id @default(uuid())
+  name      String     
+  created   DateTime   @default(now())
+  updated   DateTime   @updatedAt
+  details   String?
+  tenantId  String    // Foreign key to Tenant
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  userRoles UserRole[] // Relation to UserRole
+  assignments TenantUserRoleAssignment[]
+
+  @@unique([name, tenantId]) // Ensures role names are unique within a tenant
+}
+
+model TenantUserRoleAssignment {
+  id              String         @id @default(uuid())
+  userId          String        // Foreign key to User
+  tenantId        String        // Foreign key to Tenant
+  tenantUserRoleId String       // Foreign key to TenantUserRole
+  created         DateTime      @default(now())
+  updated         DateTime      @updatedAt
+  details         String?
+  user            User          @relation(fields: [userId], references: [id])
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  tenantUserRole  TenantUserRole @relation(fields: [tenantUserRoleId], references: [id])
+
+  @@unique([userId, tenantId, tenantUserRoleId]) // Prevents duplicate role assignments within a tenant
 }
