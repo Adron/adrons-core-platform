@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDarkMode } from '@/app/hooks/useDarkMode';
+import { commonStyles } from '@/app/styles/commonStyles';
 
 interface User {
   id: string;
@@ -12,6 +14,7 @@ interface User {
 }
 
 export default function AddUser() {
+  const isDark = useDarkMode();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState({
@@ -91,68 +94,68 @@ export default function AddUser() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className={commonStyles.container(isDark)}>
       <div className="mb-10">
-        <h1 className="text-2xl font-semibold mb-6">Add New User</h1>
+        <h1 className={commonStyles.heading(isDark)}>Add New User</h1>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <div className={commonStyles.error(isDark)}>
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="username" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
               Username
             </label>
             <input
               type="text"
               id="username"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={commonStyles.input(isDark)}
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
               Email
             </label>
             <input
               type="email"
               id="email"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={commonStyles.input(isDark)}
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
               Password
             </label>
             <input
               type="password"
               id="password"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={commonStyles.input(isDark)}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="confirmPassword" className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
               Confirm Password
             </label>
             <input
               type="password"
               id="confirmPassword"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={commonStyles.input(isDark)}
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
             />
@@ -162,11 +165,7 @@ export default function AddUser() {
             <button
               type="submit"
               disabled={isLoading}
-              className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm ${
-                isLoading
-                  ? 'bg-indigo-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
-              }`}
+              className={commonStyles.button(isDark, isLoading)}
             >
               {isLoading ? 'Creating...' : 'Create User'}
             </button>
@@ -175,41 +174,41 @@ export default function AddUser() {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">User List</h2>
+        <h2 className={commonStyles.subheading(isDark)}>User List</h2>
         {isLoadingUsers ? (
           <div className="text-center py-4">Loading users...</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className={commonStyles.table.container(isDark)}>
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className={commonStyles.table.header(isDark)}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={commonStyles.table.headerCell(isDark)}>
                     Username
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={commonStyles.table.headerCell(isDark)}>
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={commonStyles.table.headerCell(isDark)}>
                     Created At
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={commonStyles.table.headerCell(isDark)}>
                     Updated At
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200">
                 {users.map((user) => (
-                  <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={user.id} className={commonStyles.table.row(isDark)}>
+                    <td className={commonStyles.table.cell(isDark)}>
                       {user.username}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className={commonStyles.table.cell(isDark)}>
                       {user.email}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={commonStyles.table.cell(isDark)}>
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={commonStyles.table.cell(isDark)}>
                       {new Date(user.updatedAt).toLocaleDateString()}
                     </td>
                   </tr>
