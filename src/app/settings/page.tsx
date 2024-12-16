@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { ThemeToggle } from '@/app/components/ThemeToggle';
 
 type UserTenant = {
   tenant: {
@@ -59,19 +60,7 @@ export default function Settings() {
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Theme Settings</h2>
         <div className="flex flex-wrap gap-4">
-          {(['light', 'dark', 'system'] as const).map((themeOption) => (
-            <button
-              key={themeOption}
-              onClick={() => setTheme(themeOption)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                ${theme === themeOption
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-            >
-              {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)} Mode
-            </button>
-          ))}
+          <ThemeToggle />
         </div>
       </div>
 
