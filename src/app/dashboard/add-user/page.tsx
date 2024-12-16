@@ -14,7 +14,7 @@ interface User {
 }
 
 export default function AddUser() {
-  const isDark = useDarkMode();
+  const { isDark } = useDarkMode();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState({

@@ -6,7 +6,7 @@ import { useDarkMode } from '@/app/hooks/useDarkMode';
 import { commonStyles } from '@/app/styles/commonStyles';
 
 export default function AddTenant() {
-  const isDark = useDarkMode();
+  const { isDark } = useDarkMode();
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',

@@ -15,7 +15,7 @@ interface Application {
 }
 
 export default function AddApplication() {
-  const isDark = useDarkMode();
+  const { isDark } = useDarkMode();
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const [formData, setFormData] = useState({
