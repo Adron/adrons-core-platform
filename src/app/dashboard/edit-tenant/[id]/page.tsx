@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { commonStyles } from '@/app/styles/commonStyles';
@@ -32,7 +32,7 @@ export default function EditTenant({ params }: { params: { id: string } }) {
   const [error, setError] = useState('');
 
   // Fetch tenant users
-  const fetchTenantUsers = async () => {
+  const fetchTenantUsers = useCallback(async () => {
     try {
       const response = await fetch(`/api/tenants/${params.id}/users`);
       if (!response.ok) throw new Error('Failed to fetch tenant users');
@@ -43,7 +43,7 @@ export default function EditTenant({ params }: { params: { id: string } }) {
     } finally {
       setIsLoadingUsers(false);
     }
-  };
+  }, [params.id]);
 
   useEffect(() => {
     const fetchTenant = async () => {
@@ -66,7 +66,7 @@ export default function EditTenant({ params }: { params: { id: string } }) {
     };
 
     fetchTenant();
-  }, [params.id]);
+  }, [params.id, fetchTenantUsers]);
 
   const handleRemoveUser = async (userId: string) => {
     try {

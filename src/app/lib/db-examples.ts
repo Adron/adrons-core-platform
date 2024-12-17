@@ -33,6 +33,10 @@ import {
         roleNames: ['admin', 'user']
       });
   
+      if (!newUser) {
+        throw new Error('Failed to create user');
+      }
+  
       // Get all users in a tenant
       const tenantUsers = await queryUtils.getUsersInTenant(tenant.id);
   

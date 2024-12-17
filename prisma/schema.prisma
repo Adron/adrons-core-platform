@@ -67,7 +67,7 @@ model TenantUser {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, tenantId]) // Prevents duplicate tenant assignments
+  @@unique([userId, tenantId], name: "userTenantCompoundId") // Named unique constraint
 }
 
 model Application {

@@ -5,29 +5,72 @@ import prisma from '@/lib/prisma';
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
+    // Get user's tenants with role information
     const userTenants = await prisma.tenantUser.findMany({
       where: {
-        user: {
-          email: session.user.email
-        }
+        userId: session.user.id
       },
-      include: {
-        tenant: true,
+      select: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            details: true,
+            created: true,
+            updated: true,
+            roles: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        // Get role assignments for this user-tenant combination
+        user: {
+          select: {
+            userRoles: {
+              select: {
+                role: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        created: 'desc'
-      }
+        tenant: {
+          name: 'asc',
+        },
+      },
     });
 
-    return NextResponse.json(userTenants);
+    // Transform the data to include isAdmin flag
+    const transformedTenants = userTenants.map(({ tenant, user }) => ({
+      tenant: {
+        ...tenant,
+        isAdmin: user.userRoles.some(
+          userRole => userRole.role.name.toLowerCase() === 'admin'
+        ),
+      },
+    }));
+
+    return NextResponse.json(transformedTenants);
   } catch (error) {
     console.error('Error fetching tenants:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch tenants' },
       { status: 500 }
     );
   }

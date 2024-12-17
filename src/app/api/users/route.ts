@@ -75,13 +75,72 @@ export async function GET() {
         email: true,
         createdAt: true,
         updatedAt: true,
+        // Get global roles
+        userRoles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        // Get tenant memberships and roles
+        tenantRoleAssignments: {
+          select: {
+            tenant: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            tenantUserRole: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    return NextResponse.json(users);
+    // Transform the data to match our interface
+    const transformedUsers = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      tenants: user.tenantRoleAssignments.reduce((acc, tra) => {
+        const existingTenant = acc.find(t => t.tenant.id === tra.tenant.id);
+        if (existingTenant) {
+          existingTenant.tenantRoles.push({
+            id: tra.tenantUserRole.id,
+            name: tra.tenantUserRole.name,
+          });
+          return acc;
+        }
+
+        return [...acc, {
+          tenant: tra.tenant,
+          roles: user.userRoles.map(ur => ({
+            id: ur.role.id,
+            name: ur.role.name,
+          })),
+          tenantRoles: [{
+            id: tra.tenantUserRole.id,
+            name: tra.tenantUserRole.name,
+          }],
+        }];
+      }, [] as any[]),
+    }));
+
+    return NextResponse.json(transformedUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json(

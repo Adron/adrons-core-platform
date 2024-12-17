@@ -1,278 +1,201 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useDarkMode } from '@/hooks/useDarkMode';
+import { commonStyles } from '@/app/styles/commonStyles';
 
-type Tenant = {
-  tenant: {
+interface Tenant {
+  id: string;
+  name: string;
+  details?: string | null;
+  created: string;
+  updated: string;
+  isAdmin: boolean;
+  roles?: {
     id: string;
     name: string;
-    details: string | null;
-  };
-  role?: string;
-};
+  }[];
+}
 
-// Add new interface for delete modal state
-interface DeleteModalState {
-  isOpen: boolean;
-  tenantId: string;
-  tenantName: string;
-  inputValue: string;
-  error: string | null;
+interface TenantCardProps {
+  tenant: Tenant;
+  isAdmin: boolean;
+}
+
+function TenantCard({ tenant, isAdmin }: TenantCardProps) {
+  const { isDark } = useDarkMode();
+  const router = useRouter();
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className={`p-4 rounded-lg border transition-all duration-200 ${
+        isDark 
+          ? `border-gray-700 bg-gray-800 ${isHovered ? 'border-gray-600' : ''}` 
+          : `border-gray-200 bg-white ${isHovered ? 'border-gray-300 shadow-md' : ''}`
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className={`text-lg font-medium ${
+            isDark ? 'text-gray-200' : 'text-gray-900'
+          }`}>
+            {tenant.name}
+          </h3>
+          {isHovered && tenant.details && (
+            <p className={`mt-1 text-sm ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              {tenant.details}
+            </p>
+          )}
+          <div className="mt-2 text-xs text-gray-500">
+            Created: {new Date(tenant.created).toLocaleDateString()}
+          </div>
+        </div>
+        <div className="flex flex-col items-end space-y-2">
+          <div className="flex items-center space-x-2">
+            {isAdmin && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                Admin
+              </span>
+            )}
+            <button
+              onClick={() => router.push(`/dashboard/edit-tenant/${tenant.id}`)}
+              className={`px-3 py-1 rounded-md text-sm ${
+                isDark 
+                  ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Edit
+            </button>
+          </div>
+          {isAdmin && isHovered && (
+            <button
+              onClick={() => router.push(`/dashboard/tenant/${tenant.id}/manage-users`)}
+              className={`px-3 py-1 rounded-md text-sm ${
+                isDark 
+                  ? 'bg-indigo-900 text-indigo-200 hover:bg-indigo-800' 
+                  : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+              }`}
+            >
+              Manage Users
+            </button>
+          )}
+        </div>
+      </div>
+      {tenant.roles && tenant.roles.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1">
+          {tenant.roles.map((role, index) => (
+            <span
+              key={role.id || index}
+              className={`text-xs px-2 py-1 rounded-full ${
+                isDark 
+                  ? 'bg-gray-700 text-gray-300' 
+                  : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              {role.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function TenantList() {
+  const { isDark } = useDarkMode();
   const router = useRouter();
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tenants, setTenants] = useState<{ tenant: Tenant }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
-    isOpen: false,
-    tenantId: '',
-    tenantName: '',
-    inputValue: '',
-    error: null
-  });
 
-  const fetchTenants = async () => {
-    try {
-      const response = await fetch('/api/tenants', {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch tenants');
-      }
-      const data = await response.json();
-      setTenants(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load tenants');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial fetch
   useEffect(() => {
+    const fetchTenants = async () => {
+      try {
+        const response = await fetch('/api/tenants');
+        if (!response.ok) throw new Error('Failed to fetch tenants');
+        const data = await response.json();
+        setTenants(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load tenants');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchTenants();
   }, []);
 
-  // Refetch on focus
-  useEffect(() => {
-    const handleFocus = () => {
-      fetchTenants();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    
-    // Set up an interval to check for updates
-    const intervalId = setInterval(fetchTenants, 5000);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      clearInterval(intervalId);
-    };
-  }, []);
-
-  const handleDeleteClick = (tenantId: string, tenantName: string) => {
-    setDeleteModal({
-      isOpen: true,
-      tenantId,
-      tenantName,
-      inputValue: '',
-      error: null
-    });
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteModal({
-      isOpen: false,
-      tenantId: '',
-      tenantName: '',
-      inputValue: '',
-      error: null
-    });
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (deleteModal.inputValue !== deleteModal.tenantName) {
-      setDeleteModal(prev => ({
-        ...prev,
-        error: 'The tenant name does not match. Please try again.'
-      }));
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/tenants/${deleteModal.tenantId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete tenant');
-      }
-
-      handleDeleteCancel(); // Close modal
-      router.refresh();
-      await fetchTenants();
-    } catch (err) {
-      console.error('Error deleting tenant:', err);
-      setDeleteModal(prev => ({
-        ...prev,
-        error: 'Failed to delete tenant. Please try again.'
-      }));
-    }
-  };
-
-  // Delete confirmation modal component
-  const DeleteConfirmationModal = () => {
-    if (!deleteModal.isOpen) return null;
-
+  if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-            Confirm Deletion
-          </h3>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            To delete <span className="font-semibold">{deleteModal.tenantName}</span>, please type the tenant name to confirm.
-          </p>
-          <input
-            type="text"
-            value={deleteModal.inputValue}
-            onChange={(e) => {
-              const newValue = e.target.value;
-              setDeleteModal(prev => ({
-                ...prev,
-                inputValue: newValue,
-                error: null
-              }));
-            }}
-            autoFocus
-            placeholder="Type tenant name here"
-            className="w-full p-2 border rounded mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
-          />
-          {deleteModal.error && (
-            <p className="text-red-500 dark:text-red-400 mb-4">{deleteModal.error}</p>
-          )}
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={handleDeleteCancel}
-              className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDeleteConfirm}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
+      <div className={`text-center py-4 ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>
+        Loading tenants...
       </div>
     );
-  };
-
-  if (loading) {
-    return <div className="p-4 dark:text-gray-300">Loading tenants...</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-red-500 dark:text-red-400">Error: {error}</div>;
+    return (
+      <div className={commonStyles.error(isDark)}>
+        {error}
+      </div>
+    );
   }
 
-  const TenantCard = ({ tenant, isAdmin }: { tenant: Tenant['tenant']; isAdmin: boolean }) => (
-    <div className={`p-4 rounded-lg ${
-      isAdmin 
-        ? 'bg-indigo-50 border border-indigo-200 dark:bg-indigo-950/50 dark:border-indigo-800' 
-        : 'bg-gray-50 border border-gray-200 dark:bg-gray-800/50 dark:border-gray-700'
-    }`}>
-      <h4 className={`font-medium ${
-        isAdmin 
-          ? 'text-indigo-900 dark:text-indigo-300' 
-          : 'text-gray-900 dark:text-gray-100'
-      }`}>
-        {tenant.name}
-      </h4>
-      <div className="mt-3 flex space-x-4 text-sm">
-        <div className="relative group">
-          <button
-            className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white font-medium"
-          >
-            Details
-          </button>
-          {/* Tooltip - positioned to the left */}
-          <div className="absolute right-full mr-4 top-0 hidden group-hover:block w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-sm rounded shadow-lg z-50">
-            <div className="relative">
-              <h5 className="font-medium text-white mb-1">{tenant.name}</h5>
-              <div className="text-gray-300 text-sm">
-                {tenant.details || 'No details available'}
-              </div>
-              {/* Arrow pointing right */}
-              <div className="absolute top-3 -right-[6px] w-0 h-0 
-                border-t-[6px] border-t-transparent 
-                border-b-[6px] border-b-transparent 
-                border-l-[6px] border-l-gray-900 dark:border-l-gray-800">
-              </div>
-            </div>
-          </div>
-        </div>
-        <Link
-          href={`/dashboard/edit-tenant/${tenant.id}`}
-          className="text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-        >
-          Edit
-        </Link>
-        <button
-          onClick={() => handleDeleteClick(tenant.id, tenant.name)}
-          className="text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 font-medium"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  );
-
-  // Separate admin tenants from other tenants
-  const adminTenants = tenants.filter((t: Tenant) => t.role === 'ADMIN');
-  const otherTenants = tenants.filter((t: Tenant) => t.role !== 'ADMIN');
+  const adminTenants = tenants.filter(({ tenant }) => tenant.isAdmin);
+  const otherTenants = tenants.filter(({ tenant }) => !tenant.isAdmin);
 
   return (
-    <>
-      <div className="w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Your Tenants</h2>
-        
-        {adminTenants.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Administrator</h3>
-            <div className="space-y-2">
-              {adminTenants.map(({ tenant }) => (
-                <TenantCard key={tenant.id} tenant={tenant} isAdmin={true} />
-              ))}
-            </div>
+    <div className="space-y-8">
+      {adminTenants.length > 0 && (
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className={commonStyles.subheading(isDark)}>Administered Tenants</h2>
+            <button
+              onClick={() => router.push('/dashboard/add-tenant')}
+              className={commonStyles.button(isDark, false)}
+            >
+              Add New Tenant
+            </button>
           </div>
-        )}
-
-        {otherTenants.length > 0 && (
-          <div>
-            <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">Member</h3>
-            <div className="space-y-2">
-              {otherTenants.map(({ tenant }) => (
-                <TenantCard key={tenant.id} tenant={tenant} isAdmin={false} />
-              ))}
-            </div>
+          <div className="space-y-3">
+            {adminTenants.map(({ tenant }) => (
+              <TenantCard key={tenant.id} tenant={tenant} isAdmin={true} />
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {tenants.length === 0 && (
-          <p className="text-gray-700 dark:text-gray-300">No tenants found.</p>
-        )}
-      </div>
-      <DeleteConfirmationModal />
-    </>
+      {otherTenants.length > 0 && (
+        <div>
+          <h2 className={commonStyles.subheading(isDark)}>Tenants</h2>
+          <div className="space-y-3">
+            {otherTenants.map(({ tenant }) => (
+              <TenantCard key={tenant.id} tenant={tenant} isAdmin={false} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tenants.length === 0 && (
+        <div className="text-center space-y-4">
+          <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            No tenants found.
+          </p>
+          <button
+            onClick={() => router.push('/dashboard/add-tenant')}
+            className={commonStyles.button(isDark, false)}
+          >
+            Create Your First Tenant
+          </button>
+        </div>
+      )}
+    </div>
   );
 } 
