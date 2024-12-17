@@ -187,12 +187,20 @@ export default function EditTenant({ params }: { params: { id: string } }) {
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className={commonStyles.subheading(isDark)}>Tenant Users</h2>
-          <button
-            onClick={() => router.push(`/dashboard/edit-tenant/${params.id}/add-users`)}
-            className={commonStyles.button(isDark, false)}
-          >
-            Add Users
-          </button>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => router.push(`/dashboard/edit-tenant/${params.id}/manage-roles`)}
+              className={commonStyles.button(isDark, false)}
+            >
+              Manage Tenant Roles
+            </button>
+            <button
+              onClick={() => router.push(`/dashboard/edit-tenant/${params.id}/add-users`)}
+              className={commonStyles.button(isDark, false)}
+            >
+              Manage Users
+            </button>
+          </div>
         </div>
 
         {isLoadingUsers ? (
