@@ -45,7 +45,7 @@ function TenantCard({ tenant, isAdmin }: TenantCardProps) {
           }`}>
             {tenant.name}
           </h3>
-          {isHovered && tenant.details && (
+          {tenant.details && (
             <p className={`mt-1 text-sm ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             }`}>

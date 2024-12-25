@@ -14,6 +14,78 @@ interface Application {
   updated: string;
 }
 
+interface DeleteModalProps {
+  application: Application;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isDark: boolean;
+}
+
+function DeleteConfirmationModal({ application, isOpen, onClose, onConfirm, isDark }: DeleteModalProps) {
+  const [confirmName, setConfirmName] = useState('');
+  const [error, setError] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (confirmName === application.name) {
+      onConfirm();
+    } else {
+      setError('Application name does not match');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg p-6 max-w-md w-full`}>
+        <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Delete Application
+        </h3>
+        <p className={`mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+          This action cannot be undone. Please type <span className="font-semibold">{application.name}</span> to confirm.
+        </p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <input
+              type="text"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              className={commonStyles.input(isDark)}
+              placeholder="Enter application name to confirm"
+            />
+            {error && (
+              <p className="text-red-500 text-sm mt-1">{error}</p>
+            )}
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className={`px-4 py-2 rounded-md ${
+                isDark 
+                  ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete Application
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AddApplication() {
   const { isDark } = useDarkMode();
   const router = useRouter();
@@ -26,6 +98,7 @@ export default function AddApplication() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingApps, setIsLoadingApps] = useState(true);
+  const [applicationToDelete, setApplicationToDelete] = useState<Application | null>(null);
 
   // Fetch applications
   const fetchApplications = async () => {
@@ -90,6 +163,28 @@ export default function AddApplication() {
       setError(err instanceof Error ? err.message : 'Failed to create application');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (applicationId: string) => {
+    router.push(`/dashboard/edit-application/${applicationId}`);
+  };
+
+  const handleDelete = async (application: Application) => {
+    try {
+      const response = await fetch(`/api/applications/${application.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete application');
+      }
+
+      await fetchApplications(); // Refresh the list
+      setApplicationToDelete(null); // Close the modal
+    } catch (err) {
+      console.error('Error deleting application:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete application');
     }
   };
 
@@ -184,6 +279,9 @@ export default function AddApplication() {
                   <th className={commonStyles.table.headerCell(isDark)}>
                     Updated At
                   </th>
+                  <th className={commonStyles.table.headerCell(isDark)}>
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
@@ -204,6 +302,28 @@ export default function AddApplication() {
                     <td className={commonStyles.table.cell(isDark)}>
                       {new Date(app.updated).toLocaleDateString()}
                     </td>
+                    <td className={`${commonStyles.table.cell(isDark)} space-x-2`}>
+                      <button
+                        onClick={() => handleEdit(app.id)}
+                        className={`px-3 py-1 rounded-md ${
+                          isDark 
+                            ? 'bg-blue-900 text-blue-200 hover:bg-blue-800' 
+                            : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setApplicationToDelete(app)}
+                        className={`px-3 py-1 rounded-md ${
+                          isDark 
+                            ? 'bg-red-900 text-red-200 hover:bg-red-800' 
+                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                        }`}
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -211,6 +331,16 @@ export default function AddApplication() {
           </div>
         )}
       </div>
+
+      {applicationToDelete && (
+        <DeleteConfirmationModal
+          application={applicationToDelete}
+          isOpen={!!applicationToDelete}
+          onClose={() => setApplicationToDelete(null)}
+          onConfirm={() => handleDelete(applicationToDelete)}
+          isDark={isDark}
+        />
+      )}
     </div>
   );
 } 
