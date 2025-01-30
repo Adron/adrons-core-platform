@@ -65,26 +65,45 @@ export const tenantOperations = {
 };
 
 export const userOperations = {
-  // Helper function to get or create a default tenant
-  async getDefaultTenantId() {
-    // First try to find the default tenant
-    let defaultTenant = await prisma.tenant.findFirst({
-      where: {
-        name: 'Default Tenant'
-      }
-    });
-
-    // If it doesn't exist, create it
-    if (!defaultTenant) {
-      defaultTenant = await prisma.tenant.create({
+  // Helper function to create a tenant and assign owner role
+  async createTenantWithOwner(userId: string, tenantName: string, details?: string) {
+    return prisma.$transaction(async (tx) => {
+      // Create the tenant
+      const tenant = await tx.tenant.create({
         data: {
-          name: 'Default Tenant',
-          details: 'Default tenant for system-wide roles'
-        }
+          name: tenantName,
+          details: details,
+        },
       });
-    }
 
-    return defaultTenant.id;
+      // Create the owner role for this tenant
+      const ownerRole = await tx.tenantUserRole.create({
+        data: {
+          name: 'Owner',
+          details: 'Full access to tenant and all resources',
+          tenantId: tenant.id,
+        },
+      });
+
+      // Create the user-tenant relationship
+      await tx.tenantUser.create({
+        data: {
+          userId: userId,
+          tenantId: tenant.id,
+        },
+      });
+
+      // Assign the owner role to the user
+      await tx.tenantUserRoleAssignment.create({
+        data: {
+          userId: userId,
+          tenantId: tenant.id,
+          tenantUserRoleId: ownerRole.id,
+        },
+      });
+
+      return tenant;
+    });
   },
 
   // Create a new user with optional tenant and roles
@@ -92,99 +111,74 @@ export const userOperations = {
     try {
       const hashedPassword = await hash(data.password, 12);
 
-      // First, create the user without roles
-      const user = await prisma.user.create({
-        data: {
-          username: data.username,
-          email: data.email,
-          password: hashedPassword,
-        },
-      });
-
-      // If a tenant is specified, first get or create the default user role for that tenant
-      if (data.tenantId) {
-        // Get or create the default USER role for the tenant
-        const defaultRole = await prisma.tenantUserRole.upsert({
-          where: {
-            name_tenantId: {
-              name: 'USER',
-              tenantId: data.tenantId
-            }
-          },
-          create: {
-            name: 'USER',
-            tenant: {
-              connect: { id: data.tenantId }
-            }
-          },
-          update: {}
-        });
-
-        // Create the tenant role assignment
-        await prisma.tenantUserRoleAssignment.create({
+      // Create everything in a transaction
+      return await prisma.$transaction(async (tx) => {
+        // First, create the user
+        const user = await tx.user.create({
           data: {
-            user: {
-              connect: { id: user.id }
-            },
-            tenant: {
-              connect: { id: data.tenantId }
-            },
-            tenantUserRole: {
-              connect: { id: defaultRole.id }
-            }
-          }
+            username: data.username,
+            email: data.email,
+            password: hashedPassword,
+          },
         });
-      }
 
-      // If role names are specified, create the user roles
-      if (data.roleNames && data.roleNames.length > 0) {
-        for (const roleName of data.roleNames) {
-          await prisma.userRole.create({
-            data: {
-              name: `${data.username}-${roleName}`,
-              user: {
-                connect: { id: user.id }
-              },
-              role: {
-                connect: { name: roleName }
-              },
-              tenantUserRole: {
-                create: {
-                  name: 'USER',
-                  tenant: {
-                    connect: { id: data.tenantId || await userOperations.getDefaultTenantId() }
+        // Create a default tenant for this user if no tenant is specified
+        const tenantId = data.tenantId || (await this.createTenantWithOwner(
+          user.id,
+          `${data.username}'s Tenant`,
+          'Default tenant for user'
+        )).id;
+
+        // If role names are specified, create the user roles
+        if (data.roleNames && data.roleNames.length > 0) {
+          for (const roleName of data.roleNames) {
+            await tx.userRole.create({
+              data: {
+                name: `${data.username}-${roleName}`,
+                user: {
+                  connect: { id: user.id }
+                },
+                role: {
+                  connect: { name: roleName }
+                },
+                tenantUserRole: {
+                  create: {
+                    name: roleName,
+                    tenant: {
+                      connect: { id: tenantId }
+                    }
                   }
                 }
               }
-            }
-          });
-        }
-      }
-
-      // Fetch and return the complete user data with all relations
-      const createdUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: {
-          userRoles: {
-            include: {
-              role: true,
-              tenantUserRole: true
-            }
-          },
-          tenantRoleAssignments: {
-            include: {
-              tenant: true,
-              tenantUserRole: true
-            }
+            });
           }
         }
+
+        // Fetch and return the complete user data with all relations
+        const createdUser = await tx.user.findUnique({
+          where: { id: user.id },
+          include: {
+            userRoles: {
+              include: {
+                role: true,
+                tenantUserRole: true
+              }
+            },
+            tenantRoleAssignments: {
+              include: {
+                tenant: true,
+                tenantUserRole: true
+              }
+            }
+          }
+        });
+
+        if (!createdUser) {
+          throw new Error('Failed to fetch created user');
+        }
+
+        return createdUser;
       });
-
-      if (!createdUser) {
-        throw new Error('Failed to fetch created user');
-      }
-
-      return createdUser;
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -229,33 +223,22 @@ export const userOperations = {
 
     if (!user) throw new Error('User not found');
 
-    // Get or create the default tenant user role
-    const defaultTenant = await this.getDefaultTenantId();
-    const defaultRole = await prisma.tenantUserRole.upsert({
-      where: {
-        name_tenantId: {
-          name: 'USER',
-          tenantId: defaultTenant
-        }
-      },
-      create: {
-        name: 'USER',
-        tenant: {
-          connect: { id: defaultTenant }
-        }
-      },
-      update: {}
-    });
-
     return prisma.userRole.create({
       data: {
         name: `${user.username}-${roleName}`,
         user: { connect: { id: userId } },
         role: { connect: { name: roleName } },
-        tenantUserRole: { connect: { id: defaultRole.id } }
-      },
+        tenantUserRole: {
+          create: {
+            name: roleName,
+            tenant: {
+              connect: { id: await this.createTenantWithOwner(userId, `${user.username}'s Tenant`).then(t => t.id) }
+            }
+          }
+        }
+      }
     });
-  },
+  }
 };
 
 export const roleOperations = {
